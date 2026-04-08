@@ -118,11 +118,3 @@ New actions may be added via modules.
 
 ## 3.1 Global UUID
 
-Each user has:
-
-A unique UUID
-An issuer (the server that created the identity)
-
-Suggested format:
-
-<uuid>@<issuer>
