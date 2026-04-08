@@ -38,6 +38,10 @@ GuildScript: A key-based markup language with scripting capabilities, used by th
 
 Module: A GuildScript file which contains configurations and/or extra functionalities for the server
 
+Session: A expirable data structure that can confirm whether the client is connected to the server 
+
+
+
 # 2. Connection Lifecycle
 
 
@@ -116,5 +120,79 @@ New actions may be added via modules.
 # 3. Identity Model
 
 
-## 3.1 Global UUID
+## 3.1 - Global UUID
+
+Each user has:
+    - A unique UUID
+    - An issuer (the server that signed the Identity)
+
+Format:
+    <uuid>@<issuer>
+
+## 3.2 - Signature
+
+User identity must include a digital signature:
+
+Fields:
+    - UUID
+    - Issuer
+    - Signature
+
+The signature is generated using the server private key, thus can be verified by other servers using the matching pulbic key.
+
+## 3.3 - Trust Model
+
+A FXGP Server MUST mantain:
+    - A list of trusted server with their associated pubkeys.
+
+
+## 4. Extensibility
+
+FXGP supports dynamic expansibility via .fxgs (GuildScript) scripting
+
+## 4.1 - Properties Expansion
+
+Custom fields may be added to:
+
+    - Users, such as: PFP, COLOR, PRONOUNS
+    - Guilds, such as: TAGS, AGE GROUPS
+    - Messages, such as: MESSAGE_TYPE, DELETE_TIME
+    - Roles, such as: ROLE_COLOR, ROLE_OWNER
+    - Channels, such as: CHANNEL_TYPE
+
+## 4.2 - Hooks
+
+Hooks are triggered when something relevant happens, which could be used for:
+    - Moderation
+    - Automation
+    - Interaction
+
+
+# 5. Bots
+
+FXGP does not define bots as separated or inherited entity.
+
+Thus, All automation MUST be implemented from scripts.
+
+# 6. Federation
+
+FXGP supports federated communication between servers.
+
+Federation Enables:
+    - Cross-server identity validation
+    - Shared user identity shared via signed UUIDs.
+
+Servers MUST verify:
+    - Identity signatures
+    - Trust relationships with issuing servers
+
+
+# 7. Versioning 
+
+FXGP version MUST be included in communication and scripting, following the FXGP/<Version> formula.
+
+Future versions MUST be retrocompatible where possible.
+
+
+
 
