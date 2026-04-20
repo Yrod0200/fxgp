@@ -1,14 +1,14 @@
-# FXGP/1.0: Federated Extensible Guild Protocol
+# FXGP/1.1: Federated Extensible Guild Protocol
 
 
-# 1. Indroduction
-Federated eXtensible Guild Protocol (FXGP) is a TCP-based communication protocol for real-time online messaging. It supports federation between servers and dynamic extensibility via GuildScript (.fxgs, .fxgh).  
+# 1. Introduction
+Federated eXtensible Guild Protocol (FXGP) is a TCP-based communication protocol for real-time online messaging. It supports federation between Servers and dynamic extensibility via GuildScript (.fxgs, .fxgh).  
 
 The FXGP defines rules for:
 
-- Client-server communication
+- Client-Server communication
 - Optional End-to-end content cryptography 
-- Guild-based information transferring
+- Guild-based information exchange
 - Extensible, module-based configuration
 
 ## 1.1 Transport
@@ -18,27 +18,31 @@ Encoding: JSON
 
 ## 1.2 Terminology
 
-Server: An instance that manages users, guilds and the interaction between them, along interpreting .fxgs files.
+Server: An instance that manages users, guilds and the interaction between them, while interpreting .fxgs files.
 
-Client: An application that connects to a server and allows the user to interact with guilds.
+Client: An application that connects to a Server and allows the user to interact with guilds.
 
-Guild: A logical and organized space that allows people to communicate, it should include:
+Guild: A logical and organized space that allows people to communicate, it SHOULD include:
 - Category separated channels, where the connected users can send, reply and react to messages;
 - A role-based permission system with hierarchy, where specified user groups can do configured things, such as sending messages, ban users and delete messages;
-- Publicly available server metadata, including: name, description, user amount and server UUID;
+- Publicly available Server metadata, including: name, description, user amount and Server UUID;
 - A valid authentication system, which can validate user sessions.
+- Capability to be expanded in any way with GuildScript
 
-User: An authenticated entity with a unique global UUID.
+User: An authenticated entity with a unique FXID.
 
-Federation: Interaction between multiple FXGP servers.
 
-Hook: A GuildScript-defined programmable event triggered by the server when a relevant action occurs.
+FXID: A globally and unique identifier used for user authentication and moderation across all FXGP federated Servers.
 
-GuildScript: A key-based markup language with scripting capabilities, used by the Server to configurate and extend functionality.
+Federation: Interaction between multiple FXGP Servers.
 
-Module: A GuildScript file which contains configurations and/or extra functionalities for the server
+Hook: A GuildScript-defined programmable event triggered by the Server when a relevant action occurs.
 
-Session: A expirable data structure that can confirm whether the client is connected to the server 
+GuildScript: A key-based markup language with scripting capabilities, used by the Server to configure and extend functionality.
+
+Module: A GuildScript file which contains configurations and/or extra functionalities for the Server
+
+Session: A data structure with expiration that confirms whether the Client is connected to the Server 
 
 
 
@@ -46,11 +50,11 @@ Session: A expirable data structure that can confirm whether the client is conne
 
 
 ## 2.1 - Disconnected
-The client is not connected.
+The Client is not connected.
 
 ## 2.2 - Connected (Pre-Auth) 
 
-The client should request public server information.
+The Client SHOULD request public Server information.
 
 Request type:
 
@@ -64,7 +68,7 @@ Response:
     - UUID
     - User Count
 
-    The server could satisfy the request with additional info, which may or may not be ignored by the client.
+    The Server could satisfy the request with additional info, which MAY or MAY not be ignored by the Client.
 
 ## 2.3 - Authenticating
 
@@ -74,26 +78,28 @@ Request type:
 
 Payload:
 
-    UUID (if previously assigned)
+    FXID
 
 Behavior:
 
-    The server may require additional authentication steps (e.g., captcha or password)
+    The Server MAY require additional authentication steps (e.g., captcha or password)
 
-    Authentication logic may be expanded via GuildScript
+
+
+    Authentication logic MAY be expanded via GuildScript
 
 
 Response:
 
-    Global User UUID
+    FXID
 
-    Initial server-wide user data (if not previously assigned)
+    Initial Server-wide user data (if not previously assigned)
 
     User session validation
 
 ## 2.4 - Authenticated
 
-In this step, the client may execute:
+In this step, the Client MAY execute:
 
 - LIST
 
@@ -102,7 +108,7 @@ In this step, the client may execute:
 
 ## 2.5 - In Guild
 
-After JOIN_GUILD, the client enters in a guild context, where various actions can be executed (considering permissions):
+After JOIN_GUILD, the Client enters a guild context, where various actions MAY be performed (considering permissions), such as:
 
     - MESSAGE
 
@@ -114,45 +120,71 @@ After JOIN_GUILD, the client enters in a guild context, where various actions ca
 
     - BAN_USER
 
-New actions may be added via modules.
+    - MUTE_USER
+
+New actions MAY be added via modules.
 
 
 # 3. Identity Model
 
 
-## 3.1 - Global UUID
+## 3.1 - FXID
 
-Each user has:
-    - A unique UUID
-    - An issuer (the server that signed the Identity)
 
-Format:
-    <uuid>@<issuer>
-
-## 3.2 - Signature
-
-User identity must include a digital signature:
-
-Fields:
+Each user has a FXID. It is composed of:
     - UUID
-    - Issuer
-    - Signature
+    - An issuer (the Server that generated the UUID)
+    - A signature 
 
-The signature is generated using the server private key, thus can be verified by other servers using the matching pulbic key.
+## 3.2 - FXID Signature
+
+The FXID MUST include a signature.
+
+The signature MUST be generated using a Server private key over the UUID field.
+
+The signature MUST be verified by other Servers using the public key 
+
+
 
 ## 3.3 - Trust Model
 
-A FXGP Server MUST mantain:
-    - A list of trusted server with their associated pubkeys.
+A FXGP Server MUST maintain:
+    - A list of trusted Servers with their associated public keys.
 
+To verify a requesting user, the Server MUST:
+    - Validate the FXID structure
+    - Verify the signature using the issuer's public key
+    - Ensure the issuer is in the trusted Server list
+
+
+If the FXID can't be verified, the connection MUST be closed.
+
+## 3.4 - FXID Format
+
+The FXID format SHOULD be standardized by the following formula:
+
+UUID@issuer::signature
+
+Example:
+    - 550e8400-e29b-41d4-a716-446655440000@auth.fxgp.org::MEUCIQDf8v7kX9l3Y2exampleFakeSignatureBase64k3l9s2QIgY8exampleFakeSignature==
+
+Or in JSON:
+
+ ```
+    {
+  "uuid": "550e8400-e29b-41d4-a716-446655440000",
+  "issuer": "auth.fxgp.org",
+  "signature": "MEUCIQDf8v7kX9l3Y2exampleFakeSignatureBase64k3l9s2QIgY8exampleFakeSignature=="
+    }
+ ```
 
 ## 4. Extensibility
 
-FXGP supports dynamic expansibility via .fxgs (GuildScript) scripting
+FXGP supports dynamic extensibility via .fxgs (GuildScript) scripting
 
 ## 4.1 - Properties Expansion
 
-Custom fields may be added to:
+Custom fields MAY be added to:
 
     - Users, such as: PFP, COLOR, PRONOUNS
     - Guilds, such as: TAGS, AGE GROUPS
@@ -162,36 +194,44 @@ Custom fields may be added to:
 
 ## 4.2 - Hooks
 
-Hooks are triggered when something relevant happens, which could be used for:
+Hooks are triggered when something relevant happens, for example deleting a message, which could be used for:
     - Moderation
     - Automation
     - Interaction
+
+
 
 
 # 5. Bots
 
 FXGP does not define bots as separated or inherited entity.
 
-Thus, All automation MUST be implemented from scripts.
+Thus, all automation SHOULD be implemented from scripts.
 
 # 6. Federation
 
-FXGP supports federated communication between servers.
+FXGP supports federated communication between Servers.
 
 Federation Enables:
-    - Cross-server identity validation
-    - Shared user identity shared via signed UUIDs.
+    - Cross-Server identity validation
+    - Shared user identity via signed UUIDs.
 
 Servers MUST verify:
     - Identity signatures
-    - Trust relationships with issuing servers
-
+    - Trust relationships with issuing Servers
 
 # 7. Versioning 
 
-FXGP version MUST be included in communication and scripting, following the FXGP/<Version> formula.
+FXGP version MUST be included in communication and scripting, following the FXGP/Version formula.
 
-Future versions MUST be retrocompatible where possible.
+Future versions MUST be backwards compatible where possible.
+
+
+# 8. Licensing 
+
+the FXGP protocol is licensed under the GNU General Public License v3,
+
+Additional terms MAY apply as described in the FXGP Additional Terms document.
 
 
 
